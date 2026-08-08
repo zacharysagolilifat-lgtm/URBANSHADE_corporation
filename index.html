@@ -44,6 +44,7 @@ footer{margin-top:35px;padding-top:20px;border-top:1px solid #46535e;text-align:
 <label>Preferred Name / Codename</label>
 <input type="text">
 
+<label>Applicant Email</label><input type="email" name="email" required>
 <label>Age — Minimum Age: 11</label>
 <input type="number" id="age" min="0">
 
@@ -171,8 +172,9 @@ APPLICATION ACCEPTED FOR REVIEW — STATUS: PENDING REVIEW
 </div>
 
 <script>
-function submitApplication() {
+const SCRIPT_URL = "PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE";
 
+function submitApplication() {
     const error = document.getElementById("error");
     const success = document.getElementById("success");
     const age = Number(document.getElementById("age").value);
@@ -180,76 +182,72 @@ function submitApplication() {
     error.style.display = "none";
     success.style.display = "none";
 
-    // AGE CHECK
     if (!age) {
-        error.innerText =
-            "APPLICATION REJECTED — AGE FIELD IS INCOMPLETE.";
-
+        error.innerText = "APPLICATION REJECTED — AGE FIELD IS INCOMPLETE.";
         error.style.display = "block";
         return;
     }
 
     if (age < 11) {
-        error.innerText =
-            "APPLICATION REJECTED — APPLICANTS MUST BE 11 OR OLDER.";
-
+        error.innerText = "APPLICATION REJECTED — APPLICANTS MUST BE 11 OR OLDER.";
         error.style.display = "block";
         return;
     }
 
-    // CHECK ALL TEXT FIELDS AND TEXTAREAS
-    const applicantFields = document.querySelectorAll(
-        'input[type="text"]:not([name="admin"]), input[type="number"], textarea'
+    const fields = document.querySelectorAll(
+        'input[type="text"], input[type="number"], input[type="email"], textarea'
     );
 
-    // Only applicant fields are required. Administrative fields must remain blank.
-    for (const field of applicantFields) {
-
+    for (const field of fields) {
         if (!field.value.trim()) {
-
-            error.innerText =
-                "APPLICATION REJECTED — INCOMPLETE ANSWERS DETECTED. PLEASE COMPLETE ALL APPLICANT FIELDS.";
-
+            error.innerText = "APPLICATION REJECTED — INCOMPLETE ANSWERS DETECTED. PLEASE COMPLETE ALL APPLICANT FIELDS.";
             error.style.display = "block";
             field.focus();
             return;
         }
     }
 
-    // CHECK APPLICANT RADIO GROUPS ONLY
-    const radioGroups = [
-        "department",
-        "stress",
-        "isolated",
-        "confidential",
-        "hazard"
-    ];
-
-    for (const group of radioGroups) {
-
-        const selected = document.querySelector(
-            'input[name="' + group + '"]:checked'
-        );
-
-        if (!selected) {
-
-            error.innerText =
-                "APPLICATION REJECTED — AN INCOMPLETE QUESTION WAS DETECTED. PLEASE ANSWER EVERY APPLICANT QUESTION.";
-
+    for (const group of ["department","stress","isolated","confidential","hazard"]) {
+        if (!document.querySelector('input[name="' + group + '"]:checked')) {
+            error.innerText = "APPLICATION REJECTED — PLEASE ANSWER EVERY APPLICANT QUESTION.";
             error.style.display = "block";
             return;
         }
     }
 
-    // ALL QUESTIONS COMPLETED
-    success.innerText =
-        "APPLICATION ACCEPTED FOR REVIEW — STATUS: PENDING REVIEW";
+    if (SCRIPT_URL.includes("PASTE_YOUR")) {
+        error.innerText = "SUBMISSION ERROR — EMAIL SERVICE HAS NOT BEEN CONFIGURED YET.";
+        error.style.display = "block";
+        return;
+    }
 
-    success.style.display = "block";
+    const data = {};
+    document.querySelectorAll("input, textarea").forEach(field => {
+        if (field.type === "radio") {
+            if (field.checked) data[field.name] = field.value;
+        } else if (field.value.trim()) {
+            data[field.name] = field.value.trim();
+        }
+    });
 
-    window.scrollTo({
-        top: document.body.scrollHeight,
-        behavior: "smooth"
+    const button = document.querySelector("button");
+    button.disabled = true;
+    button.textContent = "SUBMITTING...";
+
+    fetch(SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: {"Content-Type":"text/plain;charset=utf-8"},
+        body: JSON.stringify(data)
+    }).then(() => {
+        success.innerText = "APPLICATION RECEIVED — STATUS: PENDING REVIEW. A confirmation email has been sent.";
+        success.style.display = "block";
+        button.style.display = "none";
+    }).catch(() => {
+        error.innerText = "SUBMISSION ERROR — PLEASE TRY AGAIN.";
+        error.style.display = "block";
+        button.disabled = false;
+        button.textContent = "SUBMIT PERSONNEL REGISTRATION";
     });
 }
 </script>
