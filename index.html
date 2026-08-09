@@ -380,6 +380,8 @@ SUBMIT PERSONNEL REGISTRATION
 </div>
 
 <script>
+// Each browser tab gets its own temporary registration state.
+// Closing the tab destroys sessionStorage, so a new tab/account starts fresh.
 const STORAGE_KEY = "urbanshade_registration_status";
 
 function showSelected() {
@@ -447,7 +449,7 @@ function submitApplication() {
 
     // The email field remains part of the fictional form,
     // but no email is actually sent.
-    localStorage.setItem(STORAGE_KEY, "pending");
+    sessionStorage.setItem(STORAGE_KEY, "pending");
 
     success.innerText =
         "APPLICATION RECEIVED — PROCESSING REGISTRATION.";
@@ -461,7 +463,7 @@ function submitApplication() {
 
         // Store the selected result after the delay.
         setTimeout(() => {
-            localStorage.setItem(STORAGE_KEY, "selected");
+            sessionStorage.setItem(STORAGE_KEY, "selected");
         }, 3000);
 
         button.textContent = "REGISTRATION RECEIVED";
@@ -469,8 +471,19 @@ function submitApplication() {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-    if (localStorage.getItem(STORAGE_KEY) === "selected") {
+    // sessionStorage is intentionally used instead of localStorage.
+    // A newly opened tab has no previous applicant's data.
+    if (sessionStorage.getItem(STORAGE_KEY) === "selected") {
         showSelected();
+    } else {
+        // Always start a fresh form when this tab has no registration status.
+        document.querySelectorAll('input[type="text"], input[type="number"], input[type="email"], textarea')
+            .forEach(field => field.value = "");
+        document.querySelectorAll('input[type="radio"], input[type="checkbox"]')
+            .forEach(field => field.checked = false);
+        document.getElementById("error").style.display = "none";
+        document.getElementById("success").style.display = "none";
+        document.getElementById("refreshNotice").style.display = "none";
     }
 });
 </script>
